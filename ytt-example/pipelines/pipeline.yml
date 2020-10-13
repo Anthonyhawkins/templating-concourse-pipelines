@@ -1,0 +1,74 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:struct", "struct")
+
+#@ load("do_bar/task.lib.yml", "do_bar")
+#@ load("do_foo/task.lib.yml", "do_foo")
+#@ load("do_baz/task.lib.yml", "do_baz")
+
+resources:
+- name: pipelines-repo
+  type: git
+  icon: github
+  source:
+    uri: https://github.com/concourse/examples
+    username: git_user
+    password: git_password
+
+- name: secrets-repo
+  type: git
+  icon: github
+  source:
+    uri: https://github.com/concourse/examples
+    username: git_user
+    password: git_password
+
+- name: python-image
+  type: docker-image
+  source:
+    repository: lab/python-image
+    username: docker_user
+    password: docker_password
+
+#@ tiles = struct.decode(data.values.tiles)
+#@ for tile in tiles:
+#@ if data.values.environment in tiles[tile]['environments']:
+- name: #@ "product-" + tile
+  type: pivnet
+  source:
+    api_token: pivnet_token
+    product_slug: image-slug
+    product_version: #@ tiles[tile]['ver']
+#@ end
+#@ end
+
+
+jobs:
+#@ tiles = struct.decode(data.values.tiles)
+#@ for tile in tiles:
+#@ if data.values.environment in tiles[tile]['environments']:
+- name: #@ "install-" + tile
+  public: true
+  plan:
+  - get: pivnet-product
+    resources: #@ "product-" + tile
+  - get: pipelines-repo
+    #@ if 'dependencies' in tiles[tile]:
+    passed: 
+    #@ for dependency in tiles[tile]['dependencies']:
+    - #@ "install-" + dependency
+    #@ end
+    #@ end
+  - get: python-image
+  - get: secrets-repo
+  - task: do_foo 
+    config: #@ do_foo()
+  - task: do_bar 
+    config: #@ do_bar()
+    on_failure:
+      task: do_baz
+      config: #@ do_baz()
+      on_failure:
+        task: do_baz
+        config: #@ do_baz()
+#@ end
+#@ end

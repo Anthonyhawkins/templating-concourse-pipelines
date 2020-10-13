@@ -1,0 +1,23 @@
+#@ load("@ytt:data", "data")
+#@ def do_baz():
+params:
+  ENVIRONMENT: (( grab $ENVIRONMENT ))
+  SECRETS_PASS: secrets_pass
+  NUM_NODES: num_nodes
+inputs:
+- name: do_baz
+- name: pipelines-repo
+- name: secrets-repo
+outputs:
+- name: do_baz
+platform: linux
+image_resource:
+  type: docker-image
+  source:
+    repository: lab/python-image
+    username: docker_user
+    password: docker_password
+run:
+  path: echo
+  args: ["Hello, world!"]
+#@ end

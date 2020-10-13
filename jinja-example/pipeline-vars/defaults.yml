@@ -1,0 +1,4 @@
+  build_log_retention:
+    days: 3
+    builds: 5
+    minimum_succeeded_builds: 2

@@ -1,0 +1,353 @@
+files:
+- pipeline.yml
+- data_vaules.yml
+- do_bar/task.lib.yml
+- do_baz/task.lib.yml
+- do_foo/task.lib.yml
+resources:
+- name: pipelines-repo
+  type: git
+  icon: github
+  source:
+    uri: https://github.com/concourse/examples
+    username: git_user
+    password: git_password
+- name: secrets-repo
+  type: git
+  icon: github
+  source:
+    uri: https://github.com/concourse/examples
+    username: git_user
+    password: git_password
+- name: python-image
+  type: docker-image
+  source:
+    repository: lab/python-image
+    username: docker_user
+    password: docker_password
+- name: product-ert
+  type: pivnet
+  source:
+    api_token: pivnet_token
+    product_slug: image-slug
+    product_version: 3\.1\.1
+- name: product-mysql-4.3
+  type: pivnet
+  source:
+    api_token: pivnet_token
+    product_slug: image-slug
+    product_version: 4\.3\..*
+- name: product-redis-4
+  type: pivnet
+  source:
+    api_token: pivnet_token
+    product_slug: image-slug
+    product_version: 4\.3\..*
+jobs:
+- name: install-ert
+  public: true
+  plan:
+  - get: pivnet-product
+    resources: product-ert
+  - get: pipelines-repo
+  - get: python-image
+  - get: secrets-repo
+  - task: do_foo
+    config:
+      params:
+        ENVIRONMENT: (( grab $ENVIRONMENT ))
+        SECRETS_PASS: secrets_pass
+        NUM_NODES: num_nodes
+      inputs:
+      - name: pipelines-repo
+      - name: secrets-repo
+      outputs:
+      - name: do_foo
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: lab/python-image
+          username: docker_user
+          password: docker_password
+      run:
+        path: echo
+        args:
+        - Hello, world!
+  - task: do_bar
+    config:
+      params:
+        ENVIRONMENT: (( grab $ENVIRONMENT ))
+        SECRETS_PASS: secrets_pass
+        NUM_NODES: num_nodes
+      inputs:
+      - name: do_bar
+      - name: pipelines-repo
+      - name: secrets-repo
+      outputs:
+      - name: do_bar
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: lab/python-image
+          username: docker_user
+          password: docker_password
+      run:
+        path: echo
+        args:
+        - Hello, world!
+    on_failure:
+      task: do_baz
+      config:
+        params:
+          ENVIRONMENT: (( grab $ENVIRONMENT ))
+          SECRETS_PASS: secrets_pass
+          NUM_NODES: num_nodes
+        inputs:
+        - name: do_baz
+        - name: pipelines-repo
+        - name: secrets-repo
+        outputs:
+        - name: do_baz
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: lab/python-image
+            username: docker_user
+            password: docker_password
+        run:
+          path: echo
+          args:
+          - Hello, world!
+      on_failure:
+        task: do_baz
+        config:
+          params:
+            ENVIRONMENT: (( grab $ENVIRONMENT ))
+            SECRETS_PASS: secrets_pass
+            NUM_NODES: num_nodes
+          inputs:
+          - name: do_baz
+          - name: pipelines-repo
+          - name: secrets-repo
+          outputs:
+          - name: do_baz
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: lab/python-image
+              username: docker_user
+              password: docker_password
+          run:
+            path: echo
+            args:
+            - Hello, world!
+- name: install-mysql-4.3
+  public: true
+  plan:
+  - get: pivnet-product
+    resources: product-mysql-4.3
+  - get: pipelines-repo
+    passed:
+    - install-ert
+  - get: python-image
+  - get: secrets-repo
+  - task: do_foo
+    config:
+      params:
+        ENVIRONMENT: (( grab $ENVIRONMENT ))
+        SECRETS_PASS: secrets_pass
+        NUM_NODES: num_nodes
+      inputs:
+      - name: pipelines-repo
+      - name: secrets-repo
+      outputs:
+      - name: do_foo
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: lab/python-image
+          username: docker_user
+          password: docker_password
+      run:
+        path: echo
+        args:
+        - Hello, world!
+  - task: do_bar
+    config:
+      params:
+        ENVIRONMENT: (( grab $ENVIRONMENT ))
+        SECRETS_PASS: secrets_pass
+        NUM_NODES: num_nodes
+      inputs:
+      - name: do_bar
+      - name: pipelines-repo
+      - name: secrets-repo
+      outputs:
+      - name: do_bar
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: lab/python-image
+          username: docker_user
+          password: docker_password
+      run:
+        path: echo
+        args:
+        - Hello, world!
+    on_failure:
+      task: do_baz
+      config:
+        params:
+          ENVIRONMENT: (( grab $ENVIRONMENT ))
+          SECRETS_PASS: secrets_pass
+          NUM_NODES: num_nodes
+        inputs:
+        - name: do_baz
+        - name: pipelines-repo
+        - name: secrets-repo
+        outputs:
+        - name: do_baz
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: lab/python-image
+            username: docker_user
+            password: docker_password
+        run:
+          path: echo
+          args:
+          - Hello, world!
+      on_failure:
+        task: do_baz
+        config:
+          params:
+            ENVIRONMENT: (( grab $ENVIRONMENT ))
+            SECRETS_PASS: secrets_pass
+            NUM_NODES: num_nodes
+          inputs:
+          - name: do_baz
+          - name: pipelines-repo
+          - name: secrets-repo
+          outputs:
+          - name: do_baz
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: lab/python-image
+              username: docker_user
+              password: docker_password
+          run:
+            path: echo
+            args:
+            - Hello, world!
+- name: install-redis-4
+  public: true
+  plan:
+  - get: pivnet-product
+    resources: product-redis-4
+  - get: pipelines-repo
+    passed:
+    - install-ert
+  - get: python-image
+  - get: secrets-repo
+  - task: do_foo
+    config:
+      params:
+        ENVIRONMENT: (( grab $ENVIRONMENT ))
+        SECRETS_PASS: secrets_pass
+        NUM_NODES: num_nodes
+      inputs:
+      - name: pipelines-repo
+      - name: secrets-repo
+      outputs:
+      - name: do_foo
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: lab/python-image
+          username: docker_user
+          password: docker_password
+      run:
+        path: echo
+        args:
+        - Hello, world!
+  - task: do_bar
+    config:
+      params:
+        ENVIRONMENT: (( grab $ENVIRONMENT ))
+        SECRETS_PASS: secrets_pass
+        NUM_NODES: num_nodes
+      inputs:
+      - name: do_bar
+      - name: pipelines-repo
+      - name: secrets-repo
+      outputs:
+      - name: do_bar
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: lab/python-image
+          username: docker_user
+          password: docker_password
+      run:
+        path: echo
+        args:
+        - Hello, world!
+    on_failure:
+      task: do_baz
+      config:
+        params:
+          ENVIRONMENT: (( grab $ENVIRONMENT ))
+          SECRETS_PASS: secrets_pass
+          NUM_NODES: num_nodes
+        inputs:
+        - name: do_baz
+        - name: pipelines-repo
+        - name: secrets-repo
+        outputs:
+        - name: do_baz
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: lab/python-image
+            username: docker_user
+            password: docker_password
+        run:
+          path: echo
+          args:
+          - Hello, world!
+      on_failure:
+        task: do_baz
+        config:
+          params:
+            ENVIRONMENT: (( grab $ENVIRONMENT ))
+            SECRETS_PASS: secrets_pass
+            NUM_NODES: num_nodes
+          inputs:
+          - name: do_baz
+          - name: pipelines-repo
+          - name: secrets-repo
+          outputs:
+          - name: do_baz
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: lab/python-image
+              username: docker_user
+              password: docker_password
+          run:
+            path: echo
+            args:
+            - Hello, world!

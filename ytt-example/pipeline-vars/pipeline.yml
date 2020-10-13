@@ -1,0 +1,26 @@
+tiles:
+  ert:
+    product: cf
+    mirror: pivnet
+    ver: '3\.1\.1'
+    environments:
+    - site-a
+    - site-c
+  mysql-4.3:
+    product: p-mysql
+    mirror: pivnet
+    ver: '4\.3\..*'
+    dependencies:
+    - ert
+    environments:
+    - site-a
+    - site-c
+  redis-4:
+    product: p-redis
+    mirror: pivnet
+    ver: '4\.3\..*'
+    dependencies:
+    - ert
+    environments:
+    - site-b
+    - site-a

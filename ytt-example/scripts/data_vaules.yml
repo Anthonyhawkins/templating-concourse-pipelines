@@ -1,0 +1,31 @@
+#@data/values
+---
+build_logs: 67
+environment: site-a
+tiles:
+  ert:
+    environments:
+    - site-a
+    - site-c
+    mirror: pivnet
+    product: cf
+    ver: 3\.1\.1
+  mysql-4.3:
+    dependencies:
+    - ert
+    environments:
+    - site-a
+    - site-c
+    mirror: pivnet
+    product: p-mysql
+    ver: 4\.3\..*
+  redis-4:
+    dependencies:
+    - ert
+    environments:
+    - site-b
+    - site-a
+    mirror: pivnet
+    product: p-redis
+    ver: 4\.3\..*
+

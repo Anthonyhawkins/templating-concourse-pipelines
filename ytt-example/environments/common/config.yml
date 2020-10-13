@@ -1,0 +1,4 @@
+meta:
+  git_user: git-svc-user
+  docker_user: docker-svs-user
+  num_nodes: 1

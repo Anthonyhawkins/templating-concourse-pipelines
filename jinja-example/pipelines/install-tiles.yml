@@ -1,0 +1,73 @@
+{% from "do_foo/task.yml" import do_foo with context %}
+{% from "do_bar/task.yml" import do_bar with context %}
+{% from "do_baz/task.yml" import do_baz with context %}
+
+resources:
+- name: pipelines-repo
+  type: git
+  icon: github
+  source:
+    uri: https://github.com/concourse/examples
+    username: {{ git_user }}
+    password: {{ "GIT_PASSWORD" | env }}
+
+- name: config-repo
+  type: git
+  icon: github
+  source:
+    uri: https://github.com/concourse/examples
+    username: {{ git_user }}
+    password: {{ "GIT_PASSWORD" | env }}
+
+- name: python-image
+  type: docker-image
+  source:
+    repository: lab/python-image
+    username: {{ docker_user }}
+    password: {{ "DOCKER_PASSWORD" | env }}
+
+{% for tile, config in tiles.items() %}
+{% if "ENVIRONMENT" | env in config['environments'] %}
+- name: {{ "product-" + tile }}
+  type: pivnet
+  source:
+    api_token: pivnet_token
+    product_slug: image-slug
+    product_version: {{ config['ver'] }}
+{% endif %}
+{% endfor %}
+
+jobs:
+{% for tile, config in tiles.items() %}
+{% if "ENVIRONMENT" | env in config['environments'] %}
+- name: {{ "install-" + tile }}
+  build_log_retention:
+    days: {{ build_log_retention['days'] }}
+    builds: {{ build_log_retention['builds'] }}
+    minimum_succeeded_builds: {{ build_log_retention['minimum_succeeded_builds'] }}
+  public: true
+  plan:
+  - get: pivnet-product
+    resources: {{ "product-" + tile }}
+  - get: pipelines-repo
+    {% if config['dependencies'] %}
+    passed: 
+    {% for dependency in config['dependencies'] %}
+    - {{ "install-" + tile }}
+    {% endfor %}
+    {% endif %}
+  - get: python-image
+  - get: config-repo
+  - task: do_foo 
+    config:
+      {{ do_foo() | indent(6)}}
+    on_failure:
+      task: do_foo
+      config:
+        {{ do_bar() | indent(8)}}
+      on_failure:
+        task: do_baz
+        config:
+          {{ do_baz() | indent(10)}}
+{% endif %}
+{% endfor %}

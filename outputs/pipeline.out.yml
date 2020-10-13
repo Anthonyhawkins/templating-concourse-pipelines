@@ -1,0 +1,112 @@
+
+resources:
+- name: pipelines-repo
+  type: git
+  icon: github
+  source:
+    uri: https://github.com/concourse/examples
+    username: git-svc-user
+    password: None
+
+- name: config-repo
+  type: git
+  icon: github
+  source:
+    uri: https://github.com/concourse/examples
+    username: git-svc-user
+    password: None
+
+- name: python-image
+  type: docker-image
+  source:
+    repository: lab/python-image
+    username: docker-svs-user
+    password: None
+
+- name: product-ert
+  type: pivnet
+  source:
+    api_token: pivnet_token
+    product_slug: image-slug
+    product_version: 3\.1\.1
+
+jobs:
+- name: install-ert
+  build_log_retention:
+    days: 3
+    builds: 5
+    minimum_succeeded_builds: 2
+  public: true
+  plan:
+  - get: pivnet-product
+    resources: product-ert
+  - get: pipelines-repo
+  - get: python-image
+  - get: config-repo
+  - task: do_foo 
+    config:
+      params:
+        ENVIRONMENT: site-c
+        SECRETS_PASS: secrets_pass
+        NUM_NODES: num_nodes
+      inputs:
+      - name: pipelines-repo
+      - name: secrets-repo
+      outputs:
+      - name: do_foo
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: lab/python-image
+          username: docker-svs-user
+          password: None
+      run:
+        path: echo
+        args: ["Hello, world!"]
+    on_failure:
+      task: do_foo
+      config:
+        params:
+          ENVIRONMENT: site-c
+          SECRETS_PASS: secrets_pass
+          NUM_NODES: num_nodes
+        inputs:
+        - name: do_bar
+        - name: pipelines-repo
+        - name: secrets-repo
+        outputs:
+        - name: do_bar
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: lab/python-image
+            username: docker-svs-user
+            password: None
+        run:
+          path: echo
+          args: ["Hello, world!"]
+      on_failure:
+        task: do_baz
+        config:
+          params:
+            ENVIRONMENT: site-c
+            SECRETS_PASS: secrets_pass
+            NUM_NODES: num_nodes
+          inputs:
+          - name: do_baz
+          - name: pipelines-repo
+          - name: secrets-repo
+          outputs:
+          - name: do_baz
+          platform: linux
+          image_resource:
+            type: docker-image
+            source:
+              repository: lab/python-image
+              username: docker-svs-user
+              password: None
+          run:
+            path: echo
+            args: ["Hello, world!"]
